@@ -1,0 +1,2160 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Dunia Bangun Ruang</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/three@0.139.2/build/three.min.js"></script>
+    <script src="https://unpkg.com/showdown@2.1.0/dist/showdown.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.2/dist/gsap.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Montserrat:wght@700;800;900&display=swap');
+        
+        :root {
+            --primary-color: #5D5CDE;
+            --primary-light: #8A89FF;
+            --primary-dark: #4A4AB0;
+            --accent-color: #FF6B6B;
+            --accent-light: #FF9E9E;
+            --success-color: #4CAF50;
+            --warning-color: #FFD166;
+            --text-light: #333333;
+            --text-dark: #F5F5F5;
+            --bg-light: #FFFFFF;
+            --bg-dark: #181818;
+            --card-light: #F0F0F7;
+            --card-dark: #252525;
+            --gradient-primary: linear-gradient(135deg, var(--primary-color), var(--primary-light));
+            --gradient-accent: linear-gradient(135deg, var(--accent-color), var(--accent-light));
+            --shadow-sm: 0 4px 6px rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 6px 12px rgba(0, 0, 0, 0.08);
+            --shadow-lg: 0 15px 25px rgba(0, 0, 0, 0.1);
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 20px;
+            --transition-fast: 0.2s ease;
+            --transition-normal: 0.3s ease;
+            --transition-slow: 0.5s ease;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html, body {
+            overflow-x: hidden;
+            width: 100%;
+            position: relative;
+        }
+
+        body {
+            background-color: var(--bg-light);
+            color: var(--text-light);
+            overflow-x: hidden;
+        }
+
+        h1, h2, h3, h4, .heading-font {
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 700;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            body {
+                background-color: var(--bg-dark);
+                color: var(--text-dark);
+            }
+        }
+
+        /* Header styles */
+        .hero-gradient {
+            background: var(--gradient-primary);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-gradient::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.08'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+            opacity: 0.3;
+            z-index: 0;
+        }
+
+        .blob {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(40px);
+            z-index: 0;
+            animation: float 10s ease-in-out infinite;
+            opacity: 0.4;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0) translateX(0); }
+            25% { transform: translateY(-10px) translateX(10px); }
+            50% { transform: translateY(10px) translateX(-15px); }
+            75% { transform: translateY(15px) translateX(5px); }
+        }
+
+        /* Scene containers */
+        .scene-container {
+            width: 100%;
+            height: 180px;
+            overflow: hidden;
+            border-radius: var(--radius-md);
+            position: relative;
+            background-color: var(--card-light);
+            box-shadow: var(--shadow-sm);
+            transition: transform var(--transition-normal), box-shadow var(--transition-normal);
+            touch-action: manipulation;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            .scene-container {
+                background-color: var(--card-dark);
+            }
+        }
+
+        @media (min-width: 768px) {
+            .scene-container {
+                height: 240px;
+            }
+        }
+
+        /* Scene placeholders for when 3D fails */
+        .scene-placeholder {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 20px;
+            z-index: 5;
+        }
+
+        /* Profession cards */
+        .profession-card {
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            transition: transform var(--transition-normal), box-shadow var(--transition-normal);
+            background-color: var(--card-light);
+            color: var(--text-light);
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 16px;
+            position: relative;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid rgba(0,0,0,0.05);
+            touch-action: manipulation;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            .profession-card {
+                background-color: var(--card-dark);
+                color: var(--text-dark);
+                border: 1px solid rgba(255,255,255,0.05);
+            }
+        }
+
+        .profession-card:hover, .profession-card:active {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .profession-card:hover .card-decoration, .profession-card:active .card-decoration {
+            opacity: 1;
+            transform: scale(1.2);
+        }
+
+        .card-decoration {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--gradient-primary);
+            opacity: 0.6;
+            transition: all var(--transition-normal);
+            z-index: 1;
+        }
+
+        .card-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: var(--gradient-primary);
+            margin-bottom: 12px;
+            transition: all var(--transition-normal);
+            transform: scale(1);
+        }
+
+        .profession-card:hover .card-icon, .profession-card:active .card-icon {
+            transform: scale(1.1);
+        }
+
+        .btn-primary {
+            background: var(--gradient-primary);
+            color: white;
+            border-radius: var(--radius-sm);
+            padding: 0.7rem 1.8rem;
+            font-weight: 600;
+            transition: all var(--transition-normal);
+            box-shadow: var(--shadow-sm);
+            border: none;
+            cursor: pointer;
+            min-height: 44px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-primary:hover, .btn-primary:active {
+            box-shadow: var(--shadow-md), 0 0 0 4px rgba(93, 92, 222, 0.2);
+            transform: translateY(-3px);
+        }
+
+        /* Badge component */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.75rem;
+            border-radius: 99px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .badge-primary {
+            background-color: rgba(93, 92, 222, 0.15);
+            color: var(--primary-color);
+        }
+
+        .badge-accent {
+            background-color: rgba(255, 107, 107, 0.15);
+            color: var(--accent-color);
+        }
+
+        /* Section title styles */
+        .section-title {
+            position: relative;
+            display: inline-block;
+            margin-bottom: 1.5rem;
+            z-index: 1;
+        }
+
+        .section-title::after {
+            content: "";
+            position: absolute;
+            left: 0;
+            bottom: -5px;
+            width: 40%;
+            height: 3px;
+            background: var(--gradient-primary);
+            border-radius: 3px;
+            z-index: -1;
+        }
+
+        /* Interactive card effect */
+        .interactive-card {
+            position: relative;
+            padding: 20px;
+            border-radius: var(--radius-md);
+            background-color: rgba(93, 92, 222, 0.03);
+            border: 1px solid rgba(93, 92, 222, 0.1);
+            overflow: hidden;
+            transition: all var(--transition-normal);
+        }
+
+        @media (min-width: 768px) {
+            .interactive-card {
+                padding: 30px;
+            }
+        }
+
+        .interactive-card:hover, .interactive-card:active {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .interactive-card::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 5px;
+            height: 100%;
+            background: var(--gradient-primary);
+            border-radius: 3px 0 0 3px;
+        }
+
+        /* Benefit cards with icons */
+        .benefit-card {
+            position: relative;
+            padding: 20px;
+            border-radius: var(--radius-md);
+            background-color: var(--card-light);
+            border: 1px solid rgba(0,0,0,0.05);
+            transition: all var(--transition-normal);
+            overflow: hidden;
+            height: 100%;
+        }
+
+        @media (min-width: 768px) {
+            .benefit-card {
+                padding: 25px 20px;
+            }
+        }
+
+        @media (prefers-color-scheme: dark) {
+            .benefit-card {
+                background-color: var(--card-dark);
+                border: 1px solid rgba(255,255,255,0.05);
+            }
+        }
+
+        .benefit-card:hover, .benefit-card:active {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .benefit-icon {
+            width: 65px;
+            height: 65px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 15px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .benefit-icon::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+            background: var(--gradient-primary);
+            opacity: 0.1;
+            z-index: -1;
+            transition: all var(--transition-normal);
+        }
+
+        .benefit-card:hover .benefit-icon::before, .benefit-card:active .benefit-icon::before {
+            opacity: 0.2;
+            transform: scale(1.1);
+        }
+
+        .benefit-icon svg {
+            color: var(--primary-color);
+            font-size: 28px;
+        }
+
+        /* Select and input styling */
+        select, input, textarea {
+            background-color: white;
+            border: 1px solid rgba(0,0,0,0.1);
+            border-radius: var(--radius-sm);
+            padding: 0.75rem 1rem;
+            font-size: 1rem;
+            transition: all var(--transition-fast);
+            box-shadow: var(--shadow-sm);
+            width: 100%;
+            -webkit-appearance: none;
+            appearance: none;
+            min-height: 44px;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            select, input, textarea {
+                background-color: #333;
+                border: 1px solid rgba(255,255,255,0.1);
+                color: white;
+            }
+        }
+
+        select:focus, input:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(93, 92, 222, 0.2);
+        }
+
+        /* Custom select styling */
+        select {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%235D5CDE' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 1rem center;
+            padding-right: 2.5rem;
+        }
+
+        /* Loading animation */
+        .info-overlay {
+            background-color: white;
+            border-radius: var(--radius-sm);
+            box-shadow: var(--shadow-md);
+            padding: 12px;
+            max-width: 250px;
+            animation: fadeInUp 0.5s ease forwards;
+            z-index: 10;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            .info-overlay {
+                background-color: #333;
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Floating shapes for decoration */
+        .floating-shape {
+            position: absolute;
+            opacity: 0.5;
+            z-index: -1;
+            animation: float 15s ease-in-out infinite;
+        }
+
+        .shape-1 {
+            top: 10%;
+            left: 5%;
+            width: 40px;
+            height: 40px;
+            background-color: var(--primary-light);
+            border-radius: 10px;
+            animation-delay: 0s;
+        }
+
+        .shape-2 {
+            top: 35%;
+            right: 7%;
+            width: 60px;
+            height: 60px;
+            background-color: var(--accent-light);
+            border-radius: 50%;
+            animation-delay: -3s;
+        }
+
+        .shape-3 {
+            bottom: 15%;
+            left: 8%;
+            width: 35px;
+            height: 35px;
+            background-color: var(--warning-color);
+            clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+            animation-delay: -6s;
+        }
+
+        /* Mobile optimizations */
+        @media (max-width: 767px) {
+            .floating-shape {
+                /* Hide or reduce size on mobile for better performance */
+                transform: scale(0.7);
+            }
+            
+            h1 {
+                font-size: 1.75rem !important;
+            }
+            
+            h2 {
+                font-size: 1.5rem !important;
+            }
+            
+            .btn-primary {
+                padding: 0.6rem 1.5rem;
+                font-size: 0.95rem;
+            }
+            
+            /* Fix section padding */
+            section {
+                padding-top: 2rem;
+                padding-bottom: 2rem;
+            }
+            
+            /* Make it easier to scroll on mobile */
+            .min-h-screen {
+                min-height: auto;
+            }
+        }
+
+        /* Touch optimizations */
+        @media (hover: none) {
+            /* Show active states directly, no hover transition */
+            .profession-card:active,
+            .benefit-card:active,
+            .btn-primary:active {
+                transform: translateY(-3px);
+            }
+        }
+
+        /* Loader */
+        .loader {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            height: 50px;
+        }
+
+        .loader div {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: var(--primary-color);
+            animation: loader 0.6s infinite alternate;
+        }
+
+        .loader div:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .loader div:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes loader {
+            to {
+                transform: translateY(-10px);
+            }
+        }
+
+        /* Custom scrollbar */
+        .modal-scrollable-content::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        .modal-scrollable-content::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.05);
+            border-radius: 10px;
+        }
+
+        .modal-scrollable-content::-webkit-scrollbar-thumb {
+            background: rgba(93, 92, 222, 0.3);
+            border-radius: 10px;
+        }
+
+        .modal-scrollable-content::-webkit-scrollbar-thumb:hover {
+            background: rgba(93, 92, 222, 0.5);
+        }
+
+        /* Fix for 3D scene fallback */
+        .scene-placeholder svg {
+            display: inline-block;
+        }
+
+        /* Add a static 3D image when WebGL fails */
+        .scene-fallback-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            position: absolute;
+            top: 0;
+            left: 0;
+            border-radius: var(--radius-md);
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+    <div>
+        <!-- Header Section with Gradient and Blobs -->
+        <header class="hero-gradient text-white py-8 relative">
+            <!-- Decorative blobs -->
+            <div class="blob" style="background: rgba(255,255,255,0.2); width: 200px; height: 200px; top: -100px; left: 10%;"></div>
+            <div class="blob" style="background: rgba(255,255,255,0.15); width: 150px; height: 150px; bottom: -70px; right: 15%;"></div>
+            
+            <div class="container mx-auto px-4 py-5 relative z-10">
+                <h1 class="text-3xl md:text-4xl font-extrabold text-center">
+                    Dunia Bangun Ruang
+                </h1>
+                <p class="text-center mt-2 text-white/90 max-w-3xl mx-auto">
+                    Temukan manfaat dan penerapan bangun ruang dalam kehidupan nyata
+                </p>
+                
+                <!-- Header Decorated Line -->
+                <div class="flex justify-center mt-5">
+                    <div class="w-20 h-1.5 bg-white/60 rounded-full"></div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="container mx-auto px-4 py-8 pb-10 relative">
+            <!-- Floating decorative shapes -->
+            <div class="floating-shape shape-1"></div>
+            <div class="floating-shape shape-2"></div>
+            <div class="floating-shape shape-3"></div>
+        
+            <!-- Intro Section -->
+            <section class="my-8 md:my-12 relative">
+                <div class="flex flex-col md:flex-row gap-6 md:gap-8 items-center relative">
+                    <div class="w-full md:w-1/2 order-2 md:order-1">
+                        <span class="badge badge-primary mb-3">Konsep Geometri 3D</span>
+                        <h2 class="text-2xl md:text-3xl font-bold mb-4" style="color: var(--primary-color)">
+                            Mengapa Bangun Ruang Penting?
+                        </h2>
+                        <p class="mb-5 text-base md:text-lg">
+                            Bangun ruang bukan sekadar materi pelajaran. Di dunia nyata, bentuk-bentuk 3D ada di sekitar kita dan menjadi dasar dari banyak profesi menarik dan teknologi modern.
+                        </p>
+                        <div class="interactive-card mb-6">
+                            <p class="text-sm">
+                                Dari desain gedung megah, pengembangan video game yang seru, hingga pengiriman barang yang efisien - semua berkaitan dengan bangun ruang!
+                            </p>
+                        </div>
+                        <div class="mt-5">
+                            <button id="explore-btn" class="btn-primary w-full md:w-auto">
+                                Jelajahi Sekarang
+                            </button>
+                        </div>
+                    </div>
+                    <div class="w-full md:w-1/2 order-1 md:order-2 mb-2 md:mb-0">
+                        <div class="relative">
+                            <!-- Gradient border around the animation -->
+                            <div class="absolute -inset-1 bg-gradient-to-r from-primary-light via-primary-color to-accent-color rounded-xl blur opacity-30"></div>
+                            <div id="intro-animation" class="scene-container relative">
+                                <!-- Fallback static image for when WebGL fails -->
+                                <div class="scene-fallback-img bg-gradient-to-br from-primary-light/30 to-primary-color/30 flex items-center justify-center">
+                                    <div class="grid grid-cols-3 gap-4">
+                                        <div class="w-12 h-12 bg-primary-color rounded transform rotate-12 shadow-lg"></div>
+                                        <div class="w-12 h-12 bg-accent-color rounded-full shadow-lg"></div>
+                                        <div class="w-12 h-12 bg-success-color transform rotate-45 shadow-lg"></div>
+                                    </div>
+                                </div>
+                                <div class="scene-placeholder">
+                                    <div>
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="50" height="50" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mx-auto mb-3">
+                                            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                                            <polyline points="7.5 4.21 12 6.81 16.5 4.21"></polyline>
+                                            <polyline points="7.5 19.79 7.5 14.6 3 12"></polyline>
+                                            <polyline points="21 12 16.5 14.6 16.5 19.79"></polyline>
+                                            <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                                            <line x1="12" y1="22.08" x2="12" y2="12"></line>
+                                        </svg>
+                                        <p>Animasi Bangun Ruang 3D</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Stats below the animation -->
+                        <div class="grid grid-cols-3 gap-2 mt-3">
+                            <div class="text-center p-2 rounded-lg bg-opacity-10 bg-primary-color">
+                                <div class="text-base md:text-lg font-bold" style="color: var(--primary-color)">70+</div>
+                                <div class="text-xs opacity-70">Aplikasi Nyata</div>
+                            </div>
+                            <div class="text-center p-2 rounded-lg bg-opacity-10 bg-primary-color">
+                                <div class="text-base md:text-lg font-bold" style="color: var(--primary-color)">20+</div>
+                                <div class="text-xs opacity-70">Jalur Karir</div>
+                            </div>
+                            <div class="text-center p-2 rounded-lg bg-opacity-10 bg-primary-color">
+                                <div class="text-base md:text-lg font-bold" style="color: var(--primary-color)">100%</div>
+                                <div class="text-xs opacity-70">Relevan</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Professions Section -->
+            <section id="professions-section" class="my-10 md:my-16">
+                <div class="text-center mb-8 md:mb-10">
+                    <span class="badge badge-accent mb-3">Prospek Karir</span>
+                    <h2 class="text-2xl md:text-3xl font-bold section-title mx-auto">
+                        Karir yang Menggunakan Bangun Ruang
+                    </h2>
+                    <p class="max-w-3xl mx-auto mt-4 opacity-75">
+                        Temukan berbagai profesi menarik yang menerapkan konsep geometri tiga dimensi dalam pekerjaan mereka sehari-hari
+                    </p>
+                </div>
+                
+                <div class="profession-grid">
+                    <!-- Architect Card -->
+                    <div class="profession-card group" data-profession="architect">
+                        <div class="card-decoration"></div>
+                        <div class="scene-container overflow-visible" id="architect-scene">
+                            <div class="scene-placeholder">
+                                <div>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mx-auto mb-2">
+                                        <rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect>
+                                        <line x1="12" y1="18" x2="12" y2="18"></line>
+                                        <line x1="9" y1="6" x2="15" y2="6"></line>
+                                        <line x1="9" y1="10" x2="15" y2="10"></line>
+                                        <line x1="9" y1="14" x2="15" y2="14"></line>
+                                    </svg>
+                                    <p>Bangunan & Arsitektur</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="p-4 md:p-6 flex-grow relative">
+                            <span class="text-xs font-semibold py-1 px-2 rounded-full bg-primary-color/10 text-primary-color">Desain Bangunan</span>
+                            <h3 class="font-bold text-xl mt-3 mb-2">Arsitek</h3>
+                            <p class="text-sm opacity-75">Merancang bangunan indah dengan perhitungan bangun ruang yang presisi untuk menciptakan struktur yang indah dan fungsional</p>
+                            <div class="mt-4 flex justify-between items-center">
+                                <span class="text-xs">Gaji: 5-40jt/bulan</span>
+                                <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-primary-color/10 text-primary-color group-hover:bg-primary-color group-hover:text-white transition-all">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                        <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/>
+                                    </svg>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Game Developer Card -->
+                    <div class="profession-card group" data-profession="gamedev">
+                        <div class="card-decoration"></div>
+                        <div class="scene-container" id="gamedev-scene">
+                            <div class="scene-placeholder">
+                                <div>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mx-auto mb-2">
+                                        <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                                        <line x1="8" y1="21" x2="16" y2="21"></line>
+                                        <line x1="12" y1="17" x2="12" y2="21"></line>
+                                        <path d="M7 9h2v2H7zM15 9h2v2h-2z"></path>
+                                        <line x1="8" y1="12" x2="16" y2="12"></line>
+                                    </svg>
+                                    <p>Dunia Game 3D</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="p-4 md:p-6 flex-grow relative">
+                            <span class="text-xs font-semibold py-1 px-2 rounded-full bg-accent-color/10 text-accent-color">Teknologi Interaktif</span>
+                            <h3 class="font-bold text-xl mt-3 mb-2">Pengembang Game</h3>
+                            <p class="text-sm opacity-75">Menciptakan dunia virtual 3D yang menakjubkan dengan karakter dan lingkungan yang imersif</p>
+                            <div class="mt-4 flex justify-between items-center">
+                                <span class="text-xs">Gaji: 6-35jt/bulan</span>
+                                <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-primary-color/10 text-primary-color group-hover:bg-primary-color group-hover:text-white transition-all">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                        <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/>
+                                    </svg>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Product Designer Card -->
+                    <div class="profession-card group" data-profession="product">
+                        <div class="card-decoration"></div>
+                        <div class="scene-container" id="product-scene">
+                            <div class="scene-placeholder">
+                                <div>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mx-auto mb-2">
+                                        <path d="M5.52 19c.64-2.2 1.84-3 3.22-3h6.52c1.38 0 2.58.8 3.22 3"></path>
+                                        <circle cx="12" cy="10" r="3"></circle>
+                                        <circle cx="12" cy="12" r="10"></circle>
+                                    </svg>
+                                    <p>Desain Produk</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="p-4 md:p-6 flex-grow relative">
+                            <span class="text-xs font-semibold py-1 px-2 rounded-full bg-success-color/10 text-success-color">Kreasi Produk</span>
+                            <h3 class="font-bold text-xl mt-3 mb-2">Desainer Produk</h3>
+                            <p class="text-sm opacity-75">Merancang produk yang ergonomis dan fungsional dengan memperhatikan dimensi dan bentuk</p>
+                            <div class="mt-4 flex justify-between items-center">
+                                <span class="text-xs">Gaji: 5-30jt/bulan</span>
+                                <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-primary-color/10 text-primary-color group-hover:bg-primary-color group-hover:text-white transition-all">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                        <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/>
+                                    </svg>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Medical Imaging Card -->
+                    <div class="profession-card group" data-profession="medical">
+                        <div class="card-decoration"></div>
+                        <div class="scene-container" id="medical-scene">
+                            <div class="scene-placeholder">
+                                <div>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mx-auto mb-2">
+                                        <path d="M8 2h8a2 2 0 0 1 2 2v2h2a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2v2a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2v-2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h2V4a2 2 0 0 1 2-2z"></path>
+                                        <circle cx="12" cy="12" r="3"></circle>
+                                    </svg>
+                                    <p>Pencitraan Medis</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="p-4 md:p-6 flex-grow relative">
+                            <span class="text-xs font-semibold py-1 px-2 rounded-full bg-warning-color/10 text-warning-color">Kesehatan</span>
+                            <h3 class="font-bold text-xl mt-3 mb-2">Ahli Pencitraan Medis</h3>
+                            <p class="text-sm opacity-75">Menggunakan bangun ruang untuk melihat tubuh manusia dalam 3D dengan teknologi canggih</p>
+                            <div class="mt-4 flex justify-between items-center">
+                                <span class="text-xs">Gaji: 6-30jt/bulan</span>
+                                <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-primary-color/10 text-primary-color group-hover:bg-primary-color group-hover:text-white transition-all">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                        <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/>
+                                    </svg>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Engineering Card -->
+                    <div class="profession-card group" data-profession="engineer">
+                        <div class="card-decoration"></div>
+                        <div class="scene-container" id="engineer-scene">
+                            <div class="scene-placeholder">
+                                <div>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mx-auto mb-2">
+                                        <polyline points="16 16 12 12 8 16"></polyline>
+                                        <line x1="12" y1="12" x2="12" y2="21"></line>
+                                        <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"></path>
+                                        <polyline points="16 16 12 12 8 16"></polyline>
+                                    </svg>
+                                    <p>Teknik Sipil</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="p-4 md:p-6 flex-grow relative">
+                            <span class="text-xs font-semibold py-1 px-2 rounded-full bg-primary-color/10 text-primary-color">Infrastruktur</span>
+                            <h3 class="font-bold text-xl mt-3 mb-2">Teknik Sipil</h3>
+                            <p class="text-sm opacity-75">Membangun infrastruktur yang kokoh dengan perhitungan geometri yang tepat dan presisi tinggi</p>
+                            <div class="mt-4 flex justify-between items-center">
+                                <span class="text-xs">Gaji: 5-35jt/bulan</span>
+                                <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-primary-color/10 text-primary-color group-hover:bg-primary-color group-hover:text-white transition-all">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                        <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/>
+                                    </svg>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Animation Card -->
+                    <div class="profession-card group" data-profession="animation">
+                        <div class="card-decoration"></div>
+                        <div class="scene-container" id="animation-scene">
+                            <div class="scene-placeholder">
+                                <div>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mx-auto mb-2">
+                                        <rect x="1" y="3" width="22" height="18" rx="2" ry="2"></rect>
+                                        <path d="M8 12h8"></path>
+                                        <path d="M8 16h8"></path>
+                                        <path d="M8 8h8"></path>
+                                    </svg>
+                                    <p>Animasi 3D</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="p-4 md:p-6 flex-grow relative">
+                            <span class="text-xs font-semibold py-1 px-2 rounded-full bg-accent-color/10 text-accent-color">Hiburan Digital</span>
+                            <h3 class="font-bold text-xl mt-3 mb-2">Animator 3D</h3>
+                            <p class="text-sm opacity-75">Menghidupkan karakter dan cerita dengan model 3D untuk film, game, dan iklan</p>
+                            <div class="mt-4 flex justify-between items-center">
+                                <span class="text-xs">Gaji: 5-30jt/bulan</span>
+                                <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-primary-color/10 text-primary-color group-hover:bg-primary-color group-hover:text-white transition-all">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                        <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/>
+                                    </svg>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Interactive Examples Section -->
+            <section class="my-10 md:my-16">
+                <div class="text-center mb-8 md:mb-10">
+                    <span class="badge badge-primary mb-3">Simulasi Interaktif</span>
+                    <h2 class="text-2xl md:text-3xl font-bold section-title mx-auto">
+                        Contoh Interaktif
+                    </h2>
+                    <p class="max-w-3xl mx-auto mt-4 opacity-75">
+                        Lihat bagaimana konsep bangun ruang diterapkan dalam situasi nyata
+                    </p>
+                </div>
+                
+                <div class="w-full bg-white dark:bg-gray-800 rounded-xl p-4 md:p-6 shadow-md relative overflow-hidden border border-gray-100 dark:border-gray-700">
+                    <!-- Decorative corner element -->
+                    <div class="absolute top-0 right-0 w-20 h-20 bg-primary-color/5 rounded-bl-full z-0"></div>
+                    
+                    <div class="relative z-10">
+                        <div class="flex flex-col md:flex-row gap-6">
+                            <div class="w-full md:w-1/2">
+                                <div class="flex items-center mb-4">
+                                    <div class="w-10 h-10 rounded-full bg-primary-color/20 flex items-center justify-center mr-3">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--primary-color)">
+                                            <path d="M21 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v3"></path>
+                                            <path d="M3 10v6a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-6"></path>
+                                            <rect x="3" y="8" width="18" height="2"></rect>
+                                        </svg>
+                                    </div>
+                                    <h3 class="font-bold text-xl">Volume & Kemasan</h3>
+                                </div>
+                                <p class="mb-5 text-sm opacity-80">Lihat bagaimana perusahaan mengoptimalkan kemasan untuk efisiensi biaya, transportasi, dan keberlanjutan lingkungan melalui perhitungan volume yang tepat.</p>
+                                
+                                <div class="mb-4">
+                                    <label class="block text-sm font-medium mb-2" for="box-shape">Pilih Bentuk Kemasan:</label>
+                                    <select id="box-shape" class="rounded-md border border-gray-300 dark:border-gray-600 px-4 py-2.5 w-full text-base focus:ring-primary-color focus:border-primary-color">
+                                        <option value="cube">Kubus (Kotak Kardus)</option>
+                                        <option value="rectangular">Balok (Kotak Persegi Panjang)</option>
+                                        <option value="cylinder">Silinder (Tabung)</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="mb-5 bg-primary-color/5 p-4 rounded-lg border border-primary-color/20">
+                                    <h4 class="font-medium mb-2">Tahukah Kamu?</h4>
+                                    <p class="text-sm">Kemasan yang optimal dapat menghemat hingga 30% biaya pengiriman dan mengurangi jejak karbon sebesar 25%.</p>
+                                </div>
+                                
+                                <button id="optimize-btn" class="btn-primary w-full">
+                                    <div class="flex items-center justify-center">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="mr-2" viewBox="0 0 16 16">
+                                            <path d="M11.46.146A.5.5 0 0 0 11.107 0H4.893a.5.5 0 0 0-.353.146L.146 4.54A.5.5 0 0 0 0 4.893v6.214a.5.5 0 0 0 .146.353l4.394 4.394a.5.5 0 0 0 .353.146h6.214a.5.5 0 0 0 .353-.146l4.394-4.394a.5.5 0 0 0 .146-.353V4.893a.5.5 0 0 0-.146-.353L11.46.146z"/>
+                                            <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/>
+                                        </svg>
+                                        Optimalisasi Bentuk
+                                    </div>
+                                </button>
+                            </div>
+                            
+                            <div class="w-full md:w-1/2">
+                                <div id="packaging-demo" class="h-64 md:h-80 rounded-xl shadow-inner bg-gray-50 dark:bg-gray-700 relative overflow-hidden border border-gray-200 dark:border-gray-600">
+                                    <div class="scene-placeholder flex flex-col items-center justify-center h-full">
+                                        <div>
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="50" height="50" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mx-auto mb-3">
+                                                <path d="M21 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v3"></path>
+                                                <path d="M3 10v6a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-6"></path>
+                                                <rect x="3" y="8" width="18" height="2"></rect>
+                                            </svg>
+                                            <p>Simulasi Kemasan 3D</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Motivation Section -->
+            <section class="my-10 md:my-16">
+                <div class="text-center mb-8 md:mb-10">
+                    <span class="badge badge-accent mb-3">Motivasi Belajar</span>
+                    <h2 class="text-2xl md:text-3xl font-bold section-title mx-auto">
+                        Mengapa Harus Semangat Belajar Bangun Ruang?
+                    </h2>
+                    <p class="max-w-3xl mx-auto mt-4 opacity-75">
+                        Manfaat memahami konsep bangun ruang jauh melampaui nilai pelajaran
+                    </p>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mt-8">
+                    <div class="benefit-card">
+                        <div class="benefit-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="currentColor" viewBox="0 0 16 16">
+                                <path d="M12.136.326A1.5 1.5 0 0 1 14 1.78V3h.5A1.5 1.5 0 0 1 16 4.5v9a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 0 13.5v-9a1.5 1.5 0 0 1 1.432-1.499L12.136.326zM5.562 3H13V1.78a.5.5 0 0 0-.621-.484L5.562 3zM1.5 4a.5.5 0 0 0-.5.5v9a.5.5 0 0 0 .5.5h13a.5.5 0 0 0 .5-.5v-9a.5.5 0 0 0-.5-.5h-13z"/>
+                            </svg>
+                        </div>
+                        <h3 class="font-bold text-lg mb-3">Peluang Karir Luas</h3>
+                        <p class="text-sm opacity-80">Keterampilan dalam memahami bangun ruang membuka pintu ke berbagai karir bergaji tinggi di bidang teknik, desain, teknologi, dan ilmu pengetahuan.</p>
+                        <ul class="mt-4 text-sm list-disc list-inside opacity-75">
+                            <li>Rata-rata gaji lebih tinggi</li>
+                            <li>Banyak jalur karir yang tersedia</li>
+                            <li>Peluang kerja global</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="benefit-card">
+                        <div class="benefit-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="currentColor" viewBox="0 0 16 16">
+                                <path d="M2 6a6 6 0 1 1 10.174 4.31c-.203.196-.359.4-.453.619l-.762 1.769A.5.5 0 0 1 10.5 13a.5.5 0 0 1 0 1 .5.5 0 0 1 0 1l-.224.447a1 1 0 0 1-.894.553H6.618a1 1 0 0 1-.894-.553L5.5 15a.5.5 0 0 1 0-1 .5.5 0 0 1 0-1 .5.5 0 0 1-.46-.302l-.761-1.77a1.964 1.964 0 0 0-.453-.618A5.984 5.984 0 0 1 2 6zm6-5a5 5 0 0 0-3.479 8.592c.263.254.514.564.676.941L5.83 12h4.342l.632-1.467c.162-.377.413-.687.676-.941A5 5 0 0 0 8 1z"/>
+                            </svg>
+                        </div>
+                        <h3 class="font-bold text-lg mb-3">Keterampilan Pemecahan Masalah</h3>
+                        <p class="text-sm opacity-80">Memahami bangun ruang melatih logika dan keterampilan pemecahan masalah kompleks yang bermanfaat dalam berbagai aspek kehidupan.</p>
+                        <ul class="mt-4 text-sm list-disc list-inside opacity-75">
+                            <li>Meningkatkan logika spasial</li>
+                            <li>Mengembangkan pemikiran abstrak</li>
+                            <li>Melatih analisis sistematis</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="benefit-card">
+                        <div class="benefit-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="currentColor" viewBox="0 0 16 16">
+                                <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
+                                <path d="M5.255 5.786a.237.237 0 0 0 .241.247h.825c.138 0 .248-.113.266-.25.09-.656.54-1.134 1.342-1.134.686 0 1.314.343 1.314 1.168 0 .635-.374.927-.965 1.371-.673.489-1.206 1.06-1.168 1.987l.003.217a.25.25 0 0 0 .25.246h.811a.25.25 0 0 0 .25-.25v-.105c0-.718.273-.927 1.01-1.486.609-.463 1.244-.977 1.244-2.056 0-1.511-1.276-2.241-2.673-2.241-1.267 0-2.655.59-2.75 2.286zm1.557 5.763c0 .533.425.927 1.01.927.609 0 1.028-.394 1.028-.927 0-.552-.42-.94-1.029-.94-.584 0-1.009.388-1.009.94z"/>
+                            </svg>
+                        </div>
+                        <h3 class="font-bold text-lg mb-3">Kreativitas & Inovasi</h3>
+                        <p class="text-sm opacity-80">Memvisualisasikan bangun ruang mengembangkan imajinasi dan kreativitas yang dapat diterapkan dalam berbagai bidang inovatif.</p>
+                        <ul class="mt-4 text-sm list-disc list-inside opacity-75">
+                            <li>Membantu visualisasi ide</li>
+                            <li>Meningkatkan kemampuan desain</li>
+                            <li>Mendorong solusi inovatif</li>
+                        </ul>
+                    </div>
+                </div>
+                
+
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="py-6 md:py-8 border-t border-gray-200 dark:border-gray-800 mt-auto">
+            <div class="container mx-auto px-4">
+                <div class="flex justify-center items-center">
+                    <div class="text-center">
+                        <h2 class="text-lg font-bold heading-font" style="color: var(--primary-color)">Dunia Bangun Ruang</h2>
+                        <p class="text-sm opacity-60 mt-1">Memahami geometri 3D untuk masa depan yang lebih baik</p>
+                    </div>
+                </div>
+                
+                <div class="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700 text-center text-sm opacity-60">
+                    <p>© 2025 Dunia Bangun Ruang - Developed By EduDeepLearn</p>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        // Global variables
+        let webGLSupported = false;
+        let activeScenes = [];
+        
+        // More robust WebGL support check
+        function checkWebGLSupport() {
+            try {
+                const canvas = document.createElement('canvas');
+                // Try to get WebGL2 first, then fallback to WebGL
+                const gl = canvas.getContext('webgl2') || 
+                           canvas.getContext('webgl') || 
+                           canvas.getContext('experimental-webgl');
+                           
+                if (!gl) return false;
+                
+                // Additional check for required capabilities
+                const supportedExtensions = gl.getSupportedExtensions();
+                // Even with minimal capabilities, we should proceed
+                return true;
+            } catch (e) {
+                console.log("WebGL detection error:", e);
+                return false;
+            }
+        }
+        
+        // Initialize Three.js scenes if WebGL is supported
+        function initThreeJS() {
+            webGLSupported = checkWebGLSupport();
+            
+            if (webGLSupported) {
+                console.log("WebGL supported. Initializing 3D scenes...");
+                // Initialize scenes with a staggered approach for better performance
+                setTimeout(() => {
+                    // First initialize the intro animation which is visible immediately
+                    initScene('intro-animation');
+                    
+                    // Force render the intro animation
+                    const introScene = activeScenes.find(s => s.id === 'intro-animation');
+                    if (introScene) {
+                        introScene.renderer.render(introScene.scene, introScene.camera);
+                        console.log("Initial render of intro animation");
+                    }
+                    
+                    // Then initialize other scenes with a slight delay
+                    setTimeout(() => {
+                        const otherScenes = [
+                            'architect-scene', 
+                            'gamedev-scene', 
+                            'product-scene', 
+                            'medical-scene', 
+                            'engineer-scene', 
+                            'animation-scene',
+                            'packaging-demo'
+                        ];
+                        
+                        otherScenes.forEach(sceneId => {
+                            initScene(sceneId);
+                            // Force render each scene immediately after initialization
+                            const scene = activeScenes.find(s => s.id === sceneId);
+                            if (scene) {
+                                scene.renderer.render(scene.scene, scene.camera);
+                                console.log("Initial render of scene:", sceneId);
+                            }
+                        });
+                    }, 100);
+                }, 0);
+            } else {
+                console.log("WebGL not supported. Using fallback static elements.");
+                // Show static fallback images when WebGL is not supported
+                displayStaticFallbacks();
+            }
+        }
+        
+        // Display static fallback images when WebGL is not available
+        function displayStaticFallbacks() {
+            document.querySelectorAll('.scene-container').forEach(container => {
+                // Make sure the placeholder is visible
+                const placeholder = container.querySelector('.scene-placeholder');
+                if (placeholder) placeholder.style.display = 'flex';
+                
+                // Add a simple CSS-based 3D shape as fallback based on container ID
+                const containerId = container.id;
+                let backgroundColor = 'rgba(93, 92, 222, 0.2)';
+                
+                if (containerId.includes('architect')) {
+                    backgroundColor = 'rgba(93, 92, 222, 0.2)';
+                } else if (containerId.includes('gamedev')) {
+                    backgroundColor = 'rgba(255, 107, 107, 0.2)';
+                } else if (containerId.includes('product')) {
+                    backgroundColor = 'rgba(76, 175, 80, 0.2)';
+                } else if (containerId.includes('medical')) {
+                    backgroundColor = 'rgba(255, 209, 102, 0.2)';
+                }
+                
+                // Apply background color to placeholder
+                placeholder.style.backgroundColor = backgroundColor;
+            });
+        }
+        
+        // Initialize a single scene
+        function initScene(sceneId) {
+            try {
+                const container = document.getElementById(sceneId);
+                if (!container) {
+                    console.log(`Container not found for scene: ${sceneId}`);
+                    return;
+                }
+                
+                // Create scene
+                const scene = new THREE.Scene();
+                scene.background = new THREE.Color(
+                    window.matchMedia('(prefers-color-scheme: dark)').matches ? 0x252525 : 0xf0f0f7
+                );
+                
+                // Create camera
+                const camera = new THREE.PerspectiveCamera(70, container.clientWidth / container.clientHeight, 0.1, 1000);
+                camera.position.z = 5;
+                
+                // Create renderer with optimized settings
+                const renderer = new THREE.WebGLRenderer({ 
+                    antialias: false, // Disable antialiasing for better performance
+                    alpha: true,
+                    powerPreference: 'high-performance',
+                    preserveDrawingBuffer: true
+                });
+                
+                renderer.setSize(container.clientWidth, container.clientHeight);
+                
+                // On mobile, reduce pixel ratio for better performance
+                const isMobile = window.innerWidth < 768;
+                renderer.setPixelRatio(isMobile ? 0.8 : Math.min(window.devicePixelRatio, 1.5));
+                
+                // Clear container and append renderer
+                const placeholder = container.querySelector('.scene-placeholder');
+                if (placeholder) placeholder.style.display = 'none';
+                
+                const existingCanvas = container.querySelector('canvas');
+                if (existingCanvas) container.removeChild(existingCanvas);
+                
+                container.appendChild(renderer.domElement);
+                
+                // Add lighting
+                const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+                scene.add(ambientLight);
+                
+                const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+                directionalLight.position.set(1, 1, 1);
+                scene.add(directionalLight);
+                
+                // Add geometry based on scene type
+                let objectGroup;
+                
+                if (sceneId === 'intro-animation') {
+                    objectGroup = createIntroAnimation();
+                } else if (sceneId === 'architect-scene') {
+                    objectGroup = createBuildingGeometry();
+                } else if (sceneId === 'gamedev-scene') {
+                    objectGroup = createGameDevGeometry();
+                } else if (sceneId === 'product-scene') {
+                    objectGroup = createProductDesignGeometry();
+                } else if (sceneId === 'medical-scene') {
+                    objectGroup = createMedicalGeometry();
+                } else if (sceneId === 'engineer-scene') {
+                    objectGroup = createEngineerGeometry();
+                } else if (sceneId === 'animation-scene') {
+                    objectGroup = createAnimationGeometry();
+                } else if (sceneId === 'packaging-demo') {
+                    objectGroup = createPackagingDemo(container);
+                }
+                
+                if (objectGroup) {
+                    scene.add(objectGroup);
+                    
+                    // Add to active scenes
+                    activeScenes.push({
+                        id: sceneId,
+                        scene: scene,
+                        camera: camera,
+                        renderer: renderer,
+                        group: objectGroup,
+                        time: 0,
+                        lastUpdated: 0
+                    });
+                    
+                    // Handle resize
+                    const resizeHandler = () => {
+                        if (!container) return;
+                        camera.aspect = container.clientWidth / container.clientHeight;
+                        camera.updateProjectionMatrix();
+                        renderer.setSize(container.clientWidth, container.clientHeight);
+                    };
+                    
+                    window.addEventListener('resize', resizeHandler);
+                    
+                    // Initial render
+                    renderer.render(scene, camera);
+                } else {
+                    console.log(`No object group created for scene: ${sceneId}`);
+                }
+            } catch (error) {
+                console.error(`Error initializing scene ${sceneId}:`, error);
+                // Show placeholder on error
+                const container = document.getElementById(sceneId);
+                if (container) {
+                    const placeholder = container.querySelector('.scene-placeholder');
+                    if (placeholder) placeholder.style.display = 'flex';
+                }
+            }
+        }
+        
+        // Create intro animation geometry
+        function createIntroAnimation() {
+            const group = new THREE.Group();
+            
+            // For mobile performance, use lower geometry detail
+            const isMobile = window.innerWidth < 768;
+            const segments = isMobile ? 8 : 16;
+            
+            // Add simple shapes
+            const shapes = [];
+            
+            // Cube
+            const cubeGeometry = new THREE.BoxGeometry(1.2, 1.2, 1.2);
+            const cubeMaterial = new THREE.MeshStandardMaterial({ color: 0x5D5CDE });
+            const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
+            cube.position.set(-1.8, 0, 0);
+            group.add(cube);
+            shapes.push(cube);
+            
+            // Sphere
+            const sphereGeometry = new THREE.SphereGeometry(0.6, segments, segments);
+            const sphereMaterial = new THREE.MeshStandardMaterial({ color: 0xFF6B6B });
+            const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+            group.add(sphere);
+            shapes.push(sphere);
+            
+            // Cone
+            const coneGeometry = new THREE.ConeGeometry(0.6, 1.2, segments);
+            const coneMaterial = new THREE.MeshStandardMaterial({ color: 0x4CAF50 });
+            const cone = new THREE.Mesh(coneGeometry, coneMaterial);
+            cone.position.set(1.8, 0, 0);
+            group.add(cone);
+            shapes.push(cone);
+            
+            // Store animation data
+            group.userData = {
+                type: 'intro',
+                shapes: shapes
+            };
+            
+            return group;
+        }
+        
+        // Create building geometry
+        function createBuildingGeometry() {
+            const group = new THREE.Group();
+            
+            // Main tower
+            const towerGeometry = new THREE.BoxGeometry(1, 3, 1);
+            const towerMaterial = new THREE.MeshStandardMaterial({ color: 0x5D5CDE });
+            const tower = new THREE.Mesh(towerGeometry, towerMaterial);
+            tower.position.y = 0.5;
+            group.add(tower);
+            
+            // Secondary tower
+            const tower2Geometry = new THREE.BoxGeometry(0.8, 2, 0.8);
+            const tower2Material = new THREE.MeshStandardMaterial({ color: 0x7272E3 });
+            const tower2 = new THREE.Mesh(tower2Geometry, tower2Material);
+            tower2.position.set(1.2, 0, 0);
+            group.add(tower2);
+            
+            // Base
+            const baseGeometry = new THREE.BoxGeometry(3, 0.2, 2);
+            const baseMaterial = new THREE.MeshStandardMaterial({ color: 0xAAAAAA });
+            const base = new THREE.Mesh(baseGeometry, baseMaterial);
+            base.position.y = -1.5;
+            group.add(base);
+            
+            // Store type
+            group.userData = {
+                type: 'building'
+            };
+            
+            return group;
+        }
+        
+        // Create game development geometry
+        function createGameDevGeometry() {
+            const group = new THREE.Group();
+            
+            // Character
+            const characterGroup = new THREE.Group();
+            
+            // Body
+            const bodyGeometry = new THREE.BoxGeometry(0.8, 1.2, 0.5);
+            const bodyMaterial = new THREE.MeshStandardMaterial({ color: 0xFF6B6B });
+            const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+            characterGroup.add(body);
+            
+            // Head
+            const headGeometry = new THREE.SphereGeometry(0.4, 8, 8);
+            const headMaterial = new THREE.MeshStandardMaterial({ color: 0xFFD166 });
+            const head = new THREE.Mesh(headGeometry, headMaterial);
+            head.position.y = 0.8;
+            characterGroup.add(head);
+            
+            // Platforms
+            const platform1Geometry = new THREE.BoxGeometry(2, 0.2, 1);
+            const platform1Material = new THREE.MeshStandardMaterial({ color: 0x56CCF2 });
+            const platform1 = new THREE.Mesh(platform1Geometry, platform1Material);
+            platform1.position.set(0, -1, 0);
+            group.add(platform1);
+            
+            const platform2Geometry = new THREE.BoxGeometry(1.5, 0.2, 1);
+            const platform2Material = new THREE.MeshStandardMaterial({ color: 0x56CCF2 });
+            const platform2 = new THREE.Mesh(platform2Geometry, platform2Material);
+            platform2.position.set(1.5, -0.5, 0);
+            group.add(platform2);
+            
+            // Add character to scene
+            characterGroup.position.set(-0.5, -0.4, 0);
+            group.add(characterGroup);
+            
+            // Store animation data
+            group.userData = {
+                type: 'gamedev',
+                character: characterGroup
+            };
+            
+            return group;
+        }
+        
+        // Create product design geometry
+        function createProductDesignGeometry() {
+            const group = new THREE.Group();
+            
+            // For mobile performance, use lower geometry detail
+            const isMobile = window.innerWidth < 768;
+            const segments = isMobile ? 8 : 16;
+            
+            // Speaker base
+            const baseGeometry = new THREE.CylinderGeometry(0.8, 0.9, 1.5, segments);
+            const baseMaterial = new THREE.MeshStandardMaterial({ color: 0x333333 });
+            const base = new THREE.Mesh(baseGeometry, baseMaterial);
+            group.add(base);
+            
+            // Speaker top
+            const topGeometry = new THREE.CylinderGeometry(0.7, 0.8, 0.2, segments);
+            const topMaterial = new THREE.MeshStandardMaterial({ color: 0x5D5CDE });
+            const top = new THREE.Mesh(topGeometry, topMaterial);
+            top.position.y = 0.85;
+            group.add(top);
+            
+            // Buttons - use fewer for mobile
+            const buttonCount = isMobile ? 1 : 2;
+            const buttonGeometry = new THREE.CylinderGeometry(0.1, 0.1, 0.05, 8);
+            const buttonMaterial = new THREE.MeshStandardMaterial({ color: 0xFFFFFF });
+            
+            const button1 = new THREE.Mesh(buttonGeometry, buttonMaterial);
+            button1.position.set(0.6, 0.3, 0.5);
+            button1.rotation.x = Math.PI / 2;
+            group.add(button1);
+            
+            if (buttonCount > 1) {
+                const button2 = new THREE.Mesh(buttonGeometry, buttonMaterial);
+                button2.position.set(0.6, 0, 0.5);
+                button2.rotation.x = Math.PI / 2;
+                group.add(button2);
+            }
+            
+            // Store type
+            group.userData = {
+                type: 'product'
+            };
+            
+            return group;
+        }
+        
+        // Create medical imaging geometry
+        function createMedicalGeometry() {
+            const group = new THREE.Group();
+            
+            // For mobile performance, use lower geometry detail
+            const isMobile = window.innerWidth < 768;
+            const segments = isMobile ? 8 : 16;
+            const detailCount = isMobile ? 3 : 6;
+            
+            // Brain outer layer
+            const brainOuterGeometry = new THREE.SphereGeometry(1.2, segments, segments);
+            const brainOuterMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0x5D5CDE, 
+                transparent: true,
+                opacity: 0.3
+            });
+            const brainOuter = new THREE.Mesh(brainOuterGeometry, brainOuterMaterial);
+            group.add(brainOuter);
+            
+            // Brain inner structure
+            const brainInnerGeometry = new THREE.SphereGeometry(0.8, Math.max(8, segments-4), Math.max(8, segments-4));
+            const brainInnerMaterial = new THREE.MeshStandardMaterial({ color: 0xFF6B6B });
+            const brainInner = new THREE.Mesh(brainInnerGeometry, brainInnerMaterial);
+            group.add(brainInner);
+            
+            // Add fewer details for mobile
+            for (let i = 0; i < detailCount; i++) {
+                const detail = new THREE.Mesh(
+                    new THREE.SphereGeometry(0.1, 6, 6),
+                    new THREE.MeshStandardMaterial({
+                        color: i % 2 === 0 ? 0x4CAF50 : 0xFFD166
+                    })
+                );
+                
+                // Place randomly within the brain
+                const theta = Math.random() * Math.PI * 2;
+                const phi = Math.random() * Math.PI;
+                const r = 0.6 * Math.random();
+                
+                detail.position.set(
+                    r * Math.sin(phi) * Math.cos(theta),
+                    r * Math.sin(phi) * Math.sin(theta),
+                    r * Math.cos(phi)
+                );
+                
+                group.add(detail);
+            }
+            
+            // Add scan lines
+            const scanLineGeometry = new THREE.PlaneGeometry(3, 3);
+            const scanLineMaterial = new THREE.MeshBasicMaterial({ 
+                color: 0x56CCF2,
+                transparent: true,
+                opacity: 0.3,
+                side: THREE.DoubleSide
+            });
+            
+            const scanLineX = new THREE.Mesh(scanLineGeometry, scanLineMaterial);
+            scanLineX.rotation.y = Math.PI / 2;
+            group.add(scanLineX);
+            
+            const scanLineY = new THREE.Mesh(scanLineGeometry, scanLineMaterial);
+            scanLineY.rotation.x = Math.PI / 2;
+            group.add(scanLineY);
+            
+            // Store animation data
+            group.userData = {
+                type: 'medical',
+                scanLines: [scanLineX, scanLineY]
+            };
+            
+            return group;
+        }
+        
+        // Create engineering geometry
+        function createEngineerGeometry() {
+            const group = new THREE.Group();
+            
+            // For mobile performance, use lower geometry detail
+            const isMobile = window.innerWidth < 768;
+            const segments = isMobile ? 6 : 8;
+            const pillarCount = isMobile ? 2 : 3;
+            
+            // Bridge deck
+            const deckGeometry = new THREE.BoxGeometry(6, 0.2, 1);
+            const deckMaterial = new THREE.MeshStandardMaterial({ color: 0x888888 });
+            const deck = new THREE.Mesh(deckGeometry, deckMaterial);
+            group.add(deck);
+            
+            // Bridge pillars
+            const pillarGeometry = new THREE.CylinderGeometry(0.15, 0.15, 1.5, segments);
+            const pillarMaterial = new THREE.MeshStandardMaterial({ color: 0x5D5CDE });
+            
+            // Calculate pillar positions based on count
+            const pillarStep = 4 / (pillarCount - 1);
+            
+            for (let i = 0; i < pillarCount; i++) {
+                const position = -2 + (i * pillarStep);
+                const pillar = new THREE.Mesh(pillarGeometry, pillarMaterial);
+                pillar.position.set(position, -0.85, 0);
+                group.add(pillar);
+            }
+            
+            // Store type
+            group.userData = {
+                type: 'engineer'
+            };
+            
+            return group;
+        }
+        
+        // Create animation geometry
+        function createAnimationGeometry() {
+            const group = new THREE.Group();
+            
+            // Character body
+            const bodyGeometry = new THREE.BoxGeometry(1, 1.5, 0.5);
+            const bodyMaterial = new THREE.MeshStandardMaterial({ color: 0x5D5CDE });
+            const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+            group.add(body);
+            
+            // Head
+            const headGeometry = new THREE.SphereGeometry(0.5, 8, 8);
+            const headMaterial = new THREE.MeshStandardMaterial({ color: 0xFFD166 });
+            const head = new THREE.Mesh(headGeometry, headMaterial);
+            head.position.y = 1.25;
+            group.add(head);
+            
+            // Arms
+            const armGeometry = new THREE.BoxGeometry(0.25, 1, 0.25);
+            const armMaterial = new THREE.MeshStandardMaterial({ color: 0x5D5CDE });
+            
+            const leftArm = new THREE.Mesh(armGeometry, armMaterial);
+            leftArm.position.set(-0.65, 0.25, 0);
+            group.add(leftArm);
+            
+            const rightArm = new THREE.Mesh(armGeometry, armMaterial);
+            rightArm.position.set(0.65, 0.25, 0);
+            group.add(rightArm);
+            
+            // Legs
+            const legGeometry = new THREE.BoxGeometry(0.35, 1, 0.35);
+            const legMaterial = new THREE.MeshStandardMaterial({ color: 0x333333 });
+            
+            const leftLeg = new THREE.Mesh(legGeometry, legMaterial);
+            leftLeg.position.set(-0.3, -1.25, 0);
+            group.add(leftLeg);
+            
+            const rightLeg = new THREE.Mesh(legGeometry, legMaterial);
+            rightLeg.position.set(0.3, -1.25, 0);
+            group.add(rightLeg);
+            
+            // Store animation data
+            group.userData = {
+                type: 'animation',
+                parts: {
+                    leftArm,
+                    rightArm,
+                    leftLeg,
+                    rightLeg
+                }
+            };
+            
+            return group;
+        }
+        
+        // Create packaging demo
+        function createPackagingDemo(container) {
+            const group = new THREE.Group();
+            
+            // For mobile performance, use lower geometry detail
+            const isMobile = window.innerWidth < 768;
+            const segments = isMobile ? 8 : 16;
+            
+            // Create initial cube package
+            const boxGeometry = new THREE.BoxGeometry(2, 2, 2);
+            const boxMaterial = new THREE.MeshStandardMaterial({
+                color: 0xD9D9D9,
+                transparent: true,
+                opacity: 0.5
+            });
+            const box = new THREE.Mesh(boxGeometry, boxMaterial);
+            group.add(box);
+            
+            // Product cube
+            const productGeometry = new THREE.BoxGeometry(1, 1, 1);
+            const productMaterial = new THREE.MeshStandardMaterial({ color: 0x5D5CDE });
+            const product = new THREE.Mesh(productGeometry, productMaterial);
+            group.add(product);
+            
+            // Setup shape change handler
+            document.getElementById('box-shape').addEventListener('change', (e) => {
+                updatePackageShape(group, e.target.value);
+            });
+            
+            // Setup optimize button
+            document.getElementById('optimize-btn').addEventListener('click', () => {
+                optimizePackage(group, container);
+            });
+            
+            // Store type and objects
+            group.userData = {
+                type: 'packaging',
+                container: box,
+                product: product,
+                segments: segments
+            };
+            
+            return group;
+        }
+        
+        // Update package shape based on selection
+        function updatePackageShape(group, shape) {
+            if (!group) return;
+            
+            // For mobile performance, use lower geometry detail
+            const segments = group.userData.segments || 16;
+            
+            // Remove existing objects
+            while (group.children.length > 0) {
+                const object = group.children[0];
+                object.geometry.dispose();
+                object.material.dispose();
+                group.remove(object);
+            }
+            
+            let containerMesh, productMesh;
+            
+            switch(shape) {
+                case 'cube':
+                    // Box container
+                    containerMesh = new THREE.Mesh(
+                        new THREE.BoxGeometry(2, 2, 2),
+                        new THREE.MeshStandardMaterial({
+                            color: 0xD9D9D9,
+                            transparent: true,
+                            opacity: 0.5
+                        })
+                    );
+                    group.add(containerMesh);
+                    
+                    // Product
+                    productMesh = new THREE.Mesh(
+                        new THREE.BoxGeometry(1, 1, 1),
+                        new THREE.MeshStandardMaterial({ color: 0x5D5CDE })
+                    );
+                    group.add(productMesh);
+                    break;
+                    
+                case 'rectangular':
+                    // Rectangular container
+                    containerMesh = new THREE.Mesh(
+                        new THREE.BoxGeometry(3, 1.5, 1.5),
+                        new THREE.MeshStandardMaterial({
+                            color: 0xD9D9D9,
+                            transparent: true,
+                            opacity: 0.5
+                        })
+                    );
+                    group.add(containerMesh);
+                    
+                    // Product
+                    productMesh = new THREE.Mesh(
+                        new THREE.BoxGeometry(2, 0.8, 0.8),
+                        new THREE.MeshStandardMaterial({ color: 0x5D5CDE })
+                    );
+                    group.add(productMesh);
+                    break;
+                    
+                case 'cylinder':
+                    // Cylinder container
+                    containerMesh = new THREE.Mesh(
+                        new THREE.CylinderGeometry(1, 1, 2.5, segments),
+                        new THREE.MeshStandardMaterial({
+                            color: 0xD9D9D9,
+                            transparent: true,
+                            opacity: 0.5
+                        })
+                    );
+                    containerMesh.rotation.x = Math.PI / 2;
+                    group.add(containerMesh);
+                    
+                    // Product
+                    productMesh = new THREE.Mesh(
+                        new THREE.CylinderGeometry(0.6, 0.6, 2, segments),
+                        new THREE.MeshStandardMaterial({ color: 0x5D5CDE })
+                    );
+                    productMesh.rotation.x = Math.PI / 2;
+                    group.add(productMesh);
+                    break;
+            }
+            
+            // Update userData references
+            if (containerMesh && productMesh) {
+                group.userData.container = containerMesh;
+                group.userData.product = productMesh;
+            }
+            
+            // Remove any existing info
+            const container = document.getElementById('packaging-demo');
+            const existingInfo = container.querySelector('.info-overlay');
+            if (existingInfo) container.removeChild(existingInfo);
+            
+            // Force render the scene after shape change
+            const sceneEntry = activeScenes.find(s => s.id === 'packaging-demo');
+            if (sceneEntry) {
+                sceneEntry.renderer.render(sceneEntry.scene, sceneEntry.camera);
+            }
+        }
+        
+        // Optimize package
+        function optimizePackage(group, container) {
+            if (!group) return;
+            
+            const shape = document.getElementById('box-shape').value;
+            const segments = group.userData.segments || 16;
+            
+            // Show loading state
+            const packagingContainer = document.getElementById('packaging-demo');
+            const existingInfo = packagingContainer.querySelector('.info-overlay');
+            if (existingInfo) packagingContainer.removeChild(existingInfo);
+            
+            const loaderElement = document.createElement('div');
+            loaderElement.className = 'info-overlay loader absolute top-2 left-2';
+            loaderElement.innerHTML = `
+                <div></div>
+                <div></div>
+                <div></div>
+            `;
+            packagingContainer.appendChild(loaderElement);
+            
+            // Simulate loading time
+            setTimeout(() => {
+                // Remove existing objects
+                while (group.children.length > 0) {
+                    const object = group.children[0];
+                    object.geometry.dispose();
+                    object.material.dispose();
+                    group.remove(object);
+                }
+                
+                let productMesh, containerMesh, savingsPercentage;
+                
+                switch(shape) {
+                    case 'cube':
+                        // Product
+                        productMesh = new THREE.Mesh(
+                            new THREE.BoxGeometry(1, 1, 1),
+                            new THREE.MeshStandardMaterial({ color: 0x5D5CDE })
+                        );
+                        group.add(productMesh);
+                        
+                        // Optimized container
+                        containerMesh = new THREE.Mesh(
+                            new THREE.BoxGeometry(1.2, 1.2, 1.2),
+                            new THREE.MeshStandardMaterial({
+                                color: 0x4CAF50,
+                                transparent: true,
+                                opacity: 0.5
+                            })
+                        );
+                        group.add(containerMesh);
+                        
+                        savingsPercentage = 78; // From 8 to 1.728 volume
+                        break;
+                        
+                    case 'rectangular':
+                        // Product
+                        productMesh = new THREE.Mesh(
+                            new THREE.BoxGeometry(2, 0.8, 0.8),
+                            new THREE.MeshStandardMaterial({ color: 0x5D5CDE })
+                        );
+                        group.add(productMesh);
+                        
+                        // Optimized container
+                        containerMesh = new THREE.Mesh(
+                            new THREE.BoxGeometry(2.2, 1, 1),
+                            new THREE.MeshStandardMaterial({
+                                color: 0x4CAF50,
+                                transparent: true,
+                                opacity: 0.5
+                            })
+                        );
+                        group.add(containerMesh);
+                        
+                        savingsPercentage = 67; // From 6.75 to 2.2 volume
+                        break;
+                        
+                    case 'cylinder':
+                        // Product
+                        productMesh = new THREE.Mesh(
+                            new THREE.CylinderGeometry(0.6, 0.6, 2, segments),
+                            new THREE.MeshStandardMaterial({ color: 0x5D5CDE })
+                        );
+                        productMesh.rotation.x = Math.PI / 2;
+                        group.add(productMesh);
+                        
+                        // Optimized container
+                        containerMesh = new THREE.Mesh(
+                            new THREE.CylinderGeometry(0.7, 0.7, 2.2, segments),
+                            new THREE.MeshStandardMaterial({
+                                color: 0x4CAF50,
+                                transparent: true,
+                                opacity: 0.5
+                            })
+                        );
+                        containerMesh.rotation.x = Math.PI / 2;
+                        group.add(containerMesh);
+                        
+                        savingsPercentage = 65; // From π*1²*2.5 to π*0.7²*2.2 volume
+                        break;
+                }
+                
+                // Update userData references
+                if (containerMesh && productMesh) {
+                    group.userData.container = containerMesh;
+                    group.userData.product = productMesh;
+                }
+                
+                // Remove loader
+                if (loaderElement) packagingContainer.removeChild(loaderElement);
+                
+                // Add savings info
+                addSavingsInfo(packagingContainer, savingsPercentage);
+                
+                // Trigger render to update immediately
+                const sceneEntry = activeScenes.find(s => s.id === 'packaging-demo');
+                if (sceneEntry) {
+                    sceneEntry.renderer.render(sceneEntry.scene, sceneEntry.camera);
+                }
+                
+            }, 800); // Simulate processing time
+        }
+        
+        // Add savings info overlay
+        function addSavingsInfo(container, percentage) {
+            // Remove any existing info
+            const existingInfo = container.querySelector('.info-overlay');
+            if (existingInfo) container.removeChild(existingInfo);
+            
+            // Create info element
+            const infoElement = document.createElement('div');
+            infoElement.className = 'info-overlay absolute top-2 left-2 bg-white dark:bg-gray-700 rounded-lg p-3 shadow-md';
+            infoElement.innerHTML = `
+                <div class="flex items-center mb-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="mr-2 text-green-600" viewBox="0 0 16 16">
+                        <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/>
+                    </svg>
+                    <p class="text-sm font-bold text-green-600">Hemat ${percentage}% Material</p>
+                </div>
+                <p class="text-xs">Optimalisasi volume menghemat 
+                biaya pengiriman dan ramah lingkungan!</p>
+                <div class="mt-2 pt-2 border-t border-gray-200 dark:border-gray-600">
+                    <div class="flex items-center text-xs">
+                        <span class="font-semibold mr-2">CO₂:</span>
+                        <div class="w-full h-2 bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden">
+                            <div class="h-full bg-green-500 rounded-full" style="width: ${percentage}%"></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            container.appendChild(infoElement);
+        }
+        
+        // Improved animation loop with less throttling for smoother animations
+        function animate(timestamp) {
+            if (!webGLSupported || activeScenes.length === 0) return;
+            
+            requestAnimationFrame(animate);
+            
+            // Less aggressive throttling for smoother animations
+            const isMobile = window.innerWidth < 768;
+            const throttleMs = isMobile ? 50 : 16; // ~20fps on mobile, ~60fps on desktop
+            
+            // Update each active scene
+            activeScenes.forEach(entry => {
+                // Only update if enough time has passed or this is a new entry
+                const shouldUpdate = !entry.lastUpdated || 
+                                     timestamp - entry.lastUpdated >= throttleMs ||
+                                     entry.id === 'intro-animation'; // Always update intro
+                
+                if (shouldUpdate) {
+                    entry.time += isMobile ? 0.03 : 0.01; // Adjusted animation speed
+                    
+                    if (entry.group) {
+                        // Basic rotation for all scenes - make it more visible
+                        entry.group.rotation.y = Math.sin(entry.time * 0.5) * 0.8;
+                        
+                        // Additional animations based on scene type
+                        const userData = entry.group.userData;
+                        
+                        if (userData) {
+                            switch(userData.type) {
+                                case 'intro':
+                                    if (userData.shapes) {
+                                        userData.shapes[0].rotation.x += isMobile ? 0.01 : 0.01;
+                                        userData.shapes[1].rotation.y += isMobile ? 0.01 : 0.01;
+                                        userData.shapes[2].rotation.z += isMobile ? 0.01 : 0.01;
+                                    }
+                                    break;
+                                    
+                                case 'gamedev':
+                                    if (userData.character) {
+                                        userData.character.position.y = -0.4 + Math.sin(entry.time * 2) * 0.2;
+                                    }
+                                    break;
+                                    
+                                case 'medical':
+                                    if (userData.scanLines) {
+                                        userData.scanLines[0].position.x = Math.sin(entry.time * 0.8) * 0.8;
+                                        userData.scanLines[1].position.y = Math.cos(entry.time * 0.6) * 0.8;
+                                    }
+                                    break;
+                                    
+                                case 'animation':
+                                    if (userData.parts) {
+                                        userData.parts.leftArm.rotation.x = Math.sin(entry.time * 2) * 0.8;
+                                        userData.parts.rightArm.rotation.x = Math.sin(entry.time * 2 + Math.PI) * 0.8;
+                                        userData.parts.leftLeg.rotation.x = Math.sin(entry.time * 2) * 0.5;
+                                        userData.parts.rightLeg.rotation.x = Math.sin(entry.time * 2 + Math.PI) * 0.5;
+                                    }
+                                    break;
+                            }
+                        }
+                    
+                        // Improved visibility detection
+                        const container = document.getElementById(entry.id);
+                        if (container && (isElementInViewport(container) || entry.id === 'intro-animation')) {
+                            // Render scene
+                            entry.renderer.render(entry.scene, entry.camera);
+                            entry.lastUpdated = timestamp;
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Improved element visibility detection
+        function isElementInViewport(el) {
+            if (!el) return false;
+            
+            const rect = el.getBoundingClientRect();
+            const windowHeight = window.innerHeight || document.documentElement.clientHeight;
+            const windowWidth = window.innerWidth || document.documentElement.clientWidth;
+            
+            // Consider element visible if any part is in viewport
+            return (
+                rect.bottom > 0 &&
+                rect.top < windowHeight &&
+                rect.right > 0 &&
+                rect.left < windowWidth
+            );
+        }
+        
+        // Setup UI Animations and Interactions
+        function setupUIAnimations() {
+            if (typeof gsap !== 'undefined') {
+                // Animate elements when they come into view
+                const animateOnScroll = (entries, observer) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            const element = entry.target;
+                            
+                            if (element.classList.contains('profession-card')) {
+                                gsap.fromTo(element, 
+                                    { y: 20, opacity: 0 },
+                                    { y: 0, opacity: 1, duration: 0.4, delay: 0.1 * Array.from(element.parentNode.children).indexOf(element) % 3 }
+                                );
+                            } else if (element.classList.contains('benefit-card')) {
+                                gsap.fromTo(element, 
+                                    { y: 15, opacity: 0 },
+                                    { y: 0, opacity: 1, duration: 0.4, delay: 0.1 * Array.from(element.parentNode.children).indexOf(element) }
+                                );
+                            } else if (element.classList.contains('interactive-card')) {
+                                gsap.fromTo(element, 
+                                    { scale: 0.97, opacity: 0 },
+                                    { scale: 1, opacity: 1, duration: 0.4 }
+                                );
+                            }
+                            
+                            observer.unobserve(element);
+                        }
+                    });
+                };
+                
+                const observer = new IntersectionObserver(animateOnScroll, { threshold: 0.1 });
+                
+                document.querySelectorAll('.profession-card, .benefit-card, .interactive-card').forEach(el => {
+                    observer.observe(el);
+                });
+                
+                // Simplify animations for mobile
+                const isMobile = window.innerWidth < 768;
+                const animationDuration = isMobile ? 0.6 : 0.8;
+                
+                // Initial animations
+                gsap.from('.hero-gradient h1', { y: -20, opacity: 0, duration: animationDuration, delay: 0.2 });
+                gsap.from('.hero-gradient p', { y: -10, opacity: 0, duration: animationDuration, delay: 0.3 });
+                
+                // Simpler blob animations on mobile
+                if (isMobile) {
+                    gsap.to('.blob', { 
+                        x: "random(-10, 10)", 
+                        y: "random(-10, 10)", 
+                        duration: "random(15, 20)", 
+                        repeat: -1, 
+                        yoyo: true, 
+                        ease: "sine.inOut",
+                        stagger: 3
+                    });
+                } else {
+                    gsap.to('.blob', { 
+                        x: "random(-20, 20)", 
+                        y: "random(-20, 20)", 
+                        duration: "random(10, 20)", 
+                        repeat: -1, 
+                        yoyo: true, 
+                        ease: "sine.inOut",
+                        stagger: 2
+                    });
+                }
+                
+                // Simpler floating shapes animations on mobile
+                if (isMobile) {
+                    gsap.to('.floating-shape', { 
+                        x: "random(-10, 10)", 
+                        y: "random(-10, 10)", 
+                        rotation: "random(-5, 5)", 
+                        duration: "random(10, 15)", 
+                        repeat: -1, 
+                        yoyo: true, 
+                        ease: "sine.inOut",
+                        stagger: 2
+                    });
+                } else {
+                    gsap.to('.floating-shape', { 
+                        x: "random(-15, 15)", 
+                        y: "random(-15, 15)", 
+                        rotation: "random(-10, 10)", 
+                        duration: "random(8, 12)", 
+                        repeat: -1, 
+                        yoyo: true, 
+                        ease: "sine.inOut",
+                        stagger: 1.5
+                    });
+                }
+            }
+        }
+        
+        // Check for dark mode
+        function initDarkMode() {
+            if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                document.documentElement.classList.add('dark');
+            }
+            
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
+                if (event.matches) {
+                    document.documentElement.classList.add('dark');
+                } else {
+                    document.documentElement.classList.remove('dark');
+                }
+                
+                // Update scene backgrounds
+                if (webGLSupported) {
+                    activeScenes.forEach(entry => {
+                        if (entry.scene) {
+                            entry.scene.background = new THREE.Color(event.matches ? 0x252525 : 0xf0f0f7);
+                            entry.renderer.render(entry.scene, entry.camera);
+                        }
+                    });
+                }
+            });
+        }
+        
+        // Optimize for mobile scrolling
+        function optimizeScroll() {
+            // Passive event listeners for better scroll performance
+            document.addEventListener('touchstart', function() {}, {passive: true});
+            document.addEventListener('touchmove', function() {}, {passive: true});
+            
+            // Force render scenes when they come into view
+            const scrollHandler = () => {
+                if (webGLSupported) {
+                    activeScenes.forEach(entry => {
+                        const container = document.getElementById(entry.id);
+                        if (container && isElementInViewport(container)) {
+                            entry.renderer.render(entry.scene, entry.camera);
+                        }
+                    });
+                }
+            };
+            
+            window.addEventListener('scroll', scrollHandler, {passive: true});
+        }
+        
+        // Main initialization - with better timing control
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log("DOM loaded, initializing app...");
+            
+            // Initialize dark mode immediately
+            initDarkMode();
+            
+            // Optimize mobile scrolling
+            optimizeScroll();
+            
+            // Initialize UI animations - doesn't require WebGL
+            setupUIAnimations();
+            
+            // Initialize Three.js - with a minimal delay to allow UI to render first
+            setTimeout(() => {
+                initThreeJS();
+                
+                // Start animation loop if WebGL is supported - with a slight delay
+                if (webGLSupported) {
+                    setTimeout(() => {
+                        animate(0);
+                        console.log("Animation loop started");
+                    }, 100);
+                }
+            }, 50);
+            
+            // Scroll to professions section when explore button clicked
+            document.getElementById('explore-btn').addEventListener('click', () => {
+                document.getElementById('professions-section').scrollIntoView({ 
+                    behavior: 'smooth' 
+                });
+            });
+            
+            // Force redraw of scenes after a delay to catch late-loaded content
+            setTimeout(() => {
+                if (webGLSupported) {
+                    activeScenes.forEach(entry => {
+                        if (entry.renderer && entry.scene && entry.camera) {
+                            entry.renderer.render(entry.scene, entry.camera);
+                        }
+                    });
+                }
+            }, 2000);
+        });
+    </script>
+</body>
+</html>
